@@ -1,6 +1,7 @@
 import 'package:app_usage/app_usage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -8,7 +9,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Map<String, int> _usageMap = {};
+  List<UsageData> _usageDataList = [];
 
   @override
   void initState() {
@@ -28,16 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
       DateTime threeMonthsAgoStart =
           twoMonthsAgoStart.subtract(Duration(days: 30));
 
-      // Get app usage for each month and store it in a map
-      _usageMap.clear();
-      _usageMap['Current Month'] =
-          await _getTotalUsageForMonth(currentMonthStart);
-      _usageMap['Previous Month'] =
-          await _getTotalUsageForMonth(previousMonthStart);
-      _usageMap['Two Months Ago'] =
-          await _getTotalUsageForMonth(twoMonthsAgoStart);
-      _usageMap['Three Months Ago'] =
-          await _getTotalUsageForMonth(threeMonthsAgoStart);
+      // Get app usage for each month and store it in a list
+      _usageDataList.clear();
+      _usageDataList.add(await _getUsageDataForMonth(currentMonthStart));
+      _usageDataList.add(await _getUsageDataForMonth(previousMonthStart));
+      _usageDataList.add(await _getUsageDataForMonth(twoMonthsAgoStart));
+      _usageDataList.add(await _getUsageDataForMonth(threeMonthsAgoStart));
 
       setState(() {});
     } on AppUsageException catch (exception) {
@@ -45,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<int> _getTotalUsageForMonth(DateTime monthStart) async {
+  Future<UsageData> _getUsageDataForMonth(DateTime monthStart) async {
     int totalUsage = 0;
     DateTime monthEnd = monthStart.add(Duration(days: 30));
     List<AppUsageInfo> infoList =
@@ -57,14 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     print("${DateFormat('MMMM').format(monthStart)}: $totalUsage minutes");
-    return totalUsage;
-  }
-
-  String formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitHours = twoDigits(duration.inHours);
-    return "$twoDigitHours Hour $twoDigitMinutes minute";
+    return UsageData(
+        month: DateFormat('MMM').format(monthStart), usage: totalUsage);
   }
 
   @override
@@ -75,31 +66,16 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('App Usage Example'),
           backgroundColor: Colors.green,
         ),
-        body: _usageMap.isNotEmpty
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _usageMap.entries.map((entry) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          entry.key,
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          "Total usage: ${formatDuration(Duration(minutes: entry.value))}",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      )
-                    ],
-                  );
-                }).toList(),
+        body: _usageDataList.isNotEmpty
+            ? SfCartesianChart(
+                primaryXAxis: CategoryAxis(),
+                series: <ChartSeries<UsageData, String>>[
+                  ColumnSeries<UsageData, String>(
+                      dataSource: _usageDataList,
+                      xValueMapper: (UsageData usage, _) => usage.month,
+                      yValueMapper: (UsageData usage, _) => usage.usage,
+                      dataLabelSettings: DataLabelSettings(isVisible: true))
+                ],
               )
             : Center(
                 child: Text("Press the button to get usage stats"),
@@ -109,4 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class UsageData {
+  final String month;
+  final int usage;
+
+  UsageData({required this.month, required this.usage});
 }
