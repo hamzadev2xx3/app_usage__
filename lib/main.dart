@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 
 
 void main() {
-  runApp(myApp());
+  runApp(bsdk());
 }
 
-class myApp extends StatelessWidget {
-  const myApp({super.key});
+class bsdk extends StatelessWidget {
+  const bsdk({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class myApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
       initialRoute:
-          "/Login", //initial route mein back slash/ replace hojata hai
+          "/HomeScreen", //initial route mein back slash/ replace hojata hai
       routes: {
         "/": (context) => HomeScreen(),
 
